@@ -282,6 +282,10 @@ function playIntro(stage) {
 
   if (reduced) { intro.remove(); stage?.setBoot(1); return; }
 
+  // la intro va en el flujo de la página: se coloca donde esté el scroll y se bloquea mientras dura
+  intro.style.top = `${window.scrollY}px`;
+  lenis?.stop();
+
   const kicker = SplitText.create('.hero__kicker', { type: 'lines', mask: 'lines' });
   const lead = SplitText.create('.hero__lead', { type: 'lines', mask: 'lines' });
   gsap.set('.hero__title .line__in', { yPercent: 108 });
@@ -302,6 +306,7 @@ function playIntro(stage) {
     .to('.intro__count', { autoAlpha: 0, duration: 0.4, ease: 'power2.in' }, 1.6)
     .to(intro, { clipPath: 'inset(0% 0% 100% 0%)', duration: 1.15, ease: 'expo.inOut' }, 1.85)
     .add(startStage, 2.0)
+    .add(() => lenis?.start(), 2.9)
     .to('.hero__title .line__in', { yPercent: 0, duration: 1.5, stagger: 0.13 }, 2.35)
     .to(kicker.lines, { yPercent: 0, duration: 1.1, stagger: 0.08 }, 2.55)
     .to(lead.lines, { yPercent: 0, duration: 1.1, stagger: 0.06 }, 2.7)
@@ -335,7 +340,7 @@ export async function initMotion(stage) {
   [initScroll, initAnchors, initMenu, wrapHeroLines, initChrome, initScrub, initGallery, initReveals, initPointer].forEach((fn) => safe(fn));
   try { playIntro(stage); } catch (err) {
     console.error('[adupa] intro', err);
-    $('.intro')?.remove(); stage?.setBoot(1);
+    $('.intro')?.remove(); stage?.setBoot(1); lenis?.start();
   }
 
   window.addEventListener('load', () => ScrollTrigger.refresh());

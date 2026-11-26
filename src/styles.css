@@ -39,7 +39,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-color: var(--g-300) var(--stage); overflow-x: hidden; overflow-x: clip; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-color: var(--g-300) var(--stage); overflow-x: hidden; overflow-x: clip; background-color: var(--stage); }
 /* las animaciones que entran desde los lados no deben ensanchar la página (en móvil permitía moverla de lado) */
 main > section, .foot { overflow-x: clip; }
 html.lenis, html.lenis body { height: auto; }
@@ -156,9 +156,12 @@ main { position: relative; }
 }
 
 /* ---------- Intro ---------- */
+/* Absoluta, no fija: Safari en iOS tiñe sus barras con el color de los elementos fijos
+   que tocan el borde, y una intro fija y oscura las dejaba negras sobre la web verde. */
 .intro {
-  position: fixed; inset: 0; z-index: 100; background: var(--g-950); color: var(--cream);
-  display: grid; place-items: center;
+  position: absolute; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: 100;
+  background: var(--g-950); color: var(--cream);
+  display: grid; grid-template-rows: 100vh; grid-template-rows: 100svh; place-items: center;
 }
 html:not(.js) .intro { display: none; }
 .intro__inner { display: grid; justify-items: center; gap: 1.6rem; }
@@ -171,7 +174,7 @@ html:not(.js) .intro { display: none; }
 .intro__line { display: flex; align-items: center; gap: .9rem; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; }
 .intro__line i { width: 2.5rem; height: 1px; background: currentColor; transform-origin: left; }
 .intro__line b { font-family: var(--f-display); font-weight: 500; font-size: 1.5rem; letter-spacing: .04em; }
-.intro__count { position: absolute; right: var(--pad); bottom: var(--pad); font-family: var(--f-display); font-size: clamp(4rem, 12vw, 10rem); line-height: .8; font-style: italic; color: var(--g-600); }
+.intro__count { position: absolute; right: var(--pad); top: calc(100vh - var(--pad)); top: calc(100svh - var(--pad)); translate: 0 -100%; font-family: var(--f-display); font-size: clamp(4rem, 12vw, 10rem); line-height: .8; font-style: italic; color: var(--g-600); }
 
 /* ---------- Navegación ---------- */
 .nav {

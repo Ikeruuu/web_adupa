@@ -11,6 +11,9 @@ import { initMotion, initReveals, killReveals, wrapHeroLines, curtainSwap, refre
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// al recargar se empieza arriba, donde está la intro (salvo que se entre con un ancla)
+if (!location.hash) { history.scrollRestoration = 'manual'; window.scrollTo(0, 0); }
+
 // 1 · idioma y contenido
 applyLang(detectLang(), { silent: true });
 renderAll();
