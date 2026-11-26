@@ -25,7 +25,7 @@ Abre `http://localhost:5173`. Para generar la versión de producción: `npm run 
 | Colaboradores | `src/content.js` → `collaborators` (logos en `public/logos/`) |
 | Logos del final (Uniovi, G9, asociaciones…) | `src/content.js` → `partners` (logos en `public/logos/`) |
 | Textos fijos en español e inglés | `src/i18n.js` |
-| Logo / sello | símbolo `#seal` al principio de `index.html` y `public/favicon.svg` |
+| Logo / sello | `src/assets/seal-ring.svg` y `seal-owl.svg` (anillo y búho, se tiñen por CSS con `--seal`); iconos y `og.jpg` en `public/`; logo completo en `public/brand/adupa-sello.svg` |
 | Colores y tipografías | variables al inicio de `src/styles.css` |
 | Escena 3D y planos de cámara | `src/scene.js` |
 

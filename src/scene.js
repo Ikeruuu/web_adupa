@@ -16,7 +16,7 @@ const C = {
   cream: 0xe9ecdc, pale: 0xcfd8c4, sage: 0xa3b596, sageHi: 0xb7c5aa,
   g400: 0x6c8a78, g500: 0x4a6858, brand: 0x344e41, brandHi: 0x3f5d4d,
   g700: 0x22362c, g750: 0x1a2a22, g800: 0x14201a, floor: 0x19281f,
-  gold: 0xd2ae62, line: 0xeef0e4, lineDim: 0xa9bdad, tick: 0x7e9b89,
+  gold: 0xcca300, line: 0xeef0e4, lineDim: 0xa9bdad, tick: 0x7e9b89,
 };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));

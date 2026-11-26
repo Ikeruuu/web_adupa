@@ -12,33 +12,20 @@
   <meta property="og:title" content="ADUPA — Debate universitario en Asturias">
   <meta property="og:description" content="Pedimos la palabra. Talleres, entrenamientos y torneos de debate universitario en Asturias.">
   <meta property="og:locale" content="es_ES">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <meta property="og:image" content="https://adupa.es/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <script>document.documentElement.classList.add('js', 'is-loading');</script>
 </head>
 <body>
 
-<!-- Sprite: sello provisional (sustituir por el logo definitivo) e iconos -->
+<!-- Sprite de iconos. El logo vive en src/assets/seal-*.svg (clase .seal) -->
 <svg class="sprite" aria-hidden="true" width="0" height="0">
   <defs>
-    <symbol id="seal" viewBox="0 0 100 100">
-      <defs><path id="seal-arc" d="M50 50 m-38.5 0 a38.5 38.5 0 1 1 77 0 a38.5 38.5 0 1 1 -77 0"/></defs>
-      <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="1.2"/>
-      <circle cx="50" cy="50" r="45.4" fill="none" stroke="currentColor" stroke-width=".5"/>
-      <circle cx="50" cy="50" r="31" fill="none" stroke="currentColor" stroke-width=".5"/>
-      <text font-family="'Archivo Variable', Archivo, sans-serif" font-size="5.6" font-weight="600" letter-spacing="1.32" fill="currentColor">
-        <textPath href="#seal-arc" startOffset="0">ASOCIACIÓN DE DEBATE UNIVERSITARIO · PRINCIPADO DE ASTURIAS ·</textPath>
-      </text>
-      <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-        <path d="M37.5 30.5 41.6 36c5.2-2.3 11.6-2.3 16.8 0l4.1-5.5-.6 11.2c3.6 8.4 2.6 17.5-4.5 23.3-4.4 3.5-10.4 3.5-14.8 0-7.100-5.800-8.100-14.900-4.500-23.300z"/>
-        <circle cx="44.300" cy="42.600" r="4.300"/>
-        <circle cx="55.700" cy="42.600" r="4.300"/>
-        <path d="M50 46.200 47.700 50 50 53.200 52.300 50z"/>
-        <path d="M44.800 56.500q2.600 2.400 5.200 0 2.600 2.400 5.200 0M46.800 60.600q1.600 1.600 3.200 0 1.600 1.600 3.200 0"/>
-        <path d="M38 68.500h24M45.800 66v4.600M54.200 66v4.600"/>
-      </g>
-      <circle cx="44.300" cy="42.600" r="1.300" fill="currentColor"/>
-      <circle cx="55.700" cy="42.600" r="1.300" fill="currentColor"/>
-    </symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
     <symbol id="i-right" viewBox="0 0 24 24"><path d="M3 12h18M14 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
     <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v18M5 14l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.600"/></symbol>
@@ -58,7 +45,7 @@
 <!-- Intro -->
 <div class="intro" aria-hidden="true">
   <div class="intro__inner">
-    <svg class="intro__seal"><use href="#seal"/></svg>
+    <span class="seal intro__seal" aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>
     <p class="intro__line"><span data-i18n="intro.line">Tiene la palabra</span><i></i><b>ADUPA</b></p>
   </div>
   <span class="intro__count">00</span>
@@ -74,7 +61,7 @@
 <!-- Navegación -->
 <header class="nav" data-tone="dark">
   <a class="brand" href="#inicio" aria-label="ADUPA — inicio">
-    <svg class="brand__seal"><use href="#seal"/></svg>
+    <span class="seal brand__seal" aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>
     <span class="brand__name">ADUPA</span>
   </a>
   <nav class="nav__links" aria-label="Principal">
@@ -181,7 +168,7 @@
       </header>
       <p class="about__statement" data-i18n="about.statement" data-reveal="words">Somos estudiantes de toda Asturias que nos juntamos cada semana para <em>discutir en serio</em>: con una moción, un cronómetro y alguien enfrente que piensa lo contrario.</p>
       <div class="about__row">
-        <svg class="about__seal" data-spin><use href="#seal"/></svg>
+        <span class="seal about__seal" data-spin aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>
         <p class="about__aside" data-i18n="about.aside" data-reveal="lines">ADUPA —Asociación de Debate Universitario del Principado de Asturias— nace para que cualquier estudiante, de cualquier grado, tenga un sitio donde aprender a debatir y desde el que representar a Asturias en los torneos universitarios.</p>
       </div>
 
@@ -367,7 +354,13 @@
 <footer class="foot" data-tone="dark">
   <div class="wrap">
     <div class="foot__top">
-      <p class="foot__tag" data-i18n="foot.tag">Asociación de Debate Universitario<br>del Principado de Asturias</p>
+      <div class="foot__id">
+        <span class="seal foot__seal" aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>
+        <div>
+          <p class="foot__tag" data-i18n="foot.tag">Asociación de Debate Universitario<br>del Principado de Asturias</p>
+          <p class="foot__motto" lang="la">Animus per disputationem locupletatur</p>
+        </div>
+      </div>
       <div class="foot__cols">
         <div>
           <p class="mono" data-i18n="foot.nav">Navegar</p>

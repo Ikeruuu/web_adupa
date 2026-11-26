@@ -203,8 +203,9 @@ function initScrub() {
   gsap.to('.hero__title', { yPercent: -22, ease: 'none', scrollTrigger: { trigger: '#quienes', start: 'top bottom', end: 'top top', scrub: true } });
   gsap.to('.hero__side, .hero__top', { y: -70, autoAlpha: 0, ease: 'none', scrollTrigger: { trigger: '#quienes', start: 'top bottom', end: 'top 45%', scrub: true } });
 
+  // gira solo el anillo con la leyenda; el búho se queda quieto
   $$('[data-spin]').forEach((el) => {
-    gsap.to(el, { rotation: 300, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.6 } });
+    gsap.to($('.seal__ring', el) || el, { rotation: 300, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.6 } });
   });
 
   gsap.to('.join__title', { xPercent: 4, ease: 'none', scrollTrigger: { trigger: '#unete', start: 'top bottom', end: 'bottom top', scrub: true } });
@@ -291,7 +292,8 @@ function playIntro(stage) {
 
   const count = $('.intro__count'); const c = { v: 0 };
   const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
-  tl.from('.intro__seal', { rotation: -120, scale: 0.6, autoAlpha: 0, duration: 1.3 })
+  tl.from('.intro__seal', { scale: 0.7, autoAlpha: 0, duration: 1.3 })
+    .from('.intro__seal .seal__ring', { rotation: -150, duration: 1.7 }, 0)
     .from('.intro__line > *', { autoAlpha: 0, y: 12, stagger: 0.09, duration: 0.8 }, 0.25)
     .from('.intro__line i', { scaleX: 0, duration: 0.9 }, 0.35)
     .to(c, { v: 100, duration: 1.5, ease: 'power2.inOut', onUpdate: () => { count.textContent = pad(Math.round(c.v)); } }, 0)

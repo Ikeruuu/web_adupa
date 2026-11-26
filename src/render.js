@@ -197,7 +197,7 @@ export function renderDocs() {
   $('#docs-grid').innerHTML = documents.map((d, i) => `
     <article class="doc" data-reveal="up" data-tilt>
       <div class="doc__paper" aria-hidden="true">
-        <svg class="doc__seal"><use href="#seal"/></svg>
+        <span class="seal doc__seal" aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>
         <span class="doc__lines"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         <span class="doc__stamp mono">${esc(t('docs.stamp'))}</span>
       </div>
@@ -248,7 +248,7 @@ export function renderPartners() {
       ? `<a class="partner" href="${esc(p.url)}" target="_blank" rel="noopener">${inner}</a>`
       : `<span class="partner">${inner}</span>`;
   };
-  const row = partners.map((p) => `${item(p)}<svg class="partner__sep" aria-hidden="true"><use href="#seal"/></svg>`).join('');
+  const row = partners.map((p) => `${item(p)}<span class="seal partner__sep" aria-hidden="true"><i class="seal__ring"></i><i class="seal__owl"></i></span>`).join('');
   $('#partners-marquee').innerHTML = `<div class="marquee__row">${row}</div><div class="marquee__row" aria-hidden="true">${row}</div>`;
 }
 
