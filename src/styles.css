@@ -180,6 +180,13 @@ html:not(.js) .intro { display: none; }
 }
 .nav[data-tone='paper'] { color: var(--ink); }
 .nav.is-hidden { transform: translateY(-110%); }
+/* al volver a aparecer sobre el contenido, un velo evita que la barra se mezcle con el texto */
+.nav::before {
+  content: ''; position: absolute; inset: 0 0 -2.2rem 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--g-950) 82%, transparent) 30%, transparent);
+  opacity: 0; transition: opacity .45s var(--ease);
+}
+.nav.is-stuck::before { opacity: 1; }
 .brand { display: flex; align-items: center; gap: .7rem; }
 /* en pequeño el grabado es muy fino: se engorda un poco para que no se pierda */
 .brand__seal, .partner__sep { filter: drop-shadow(0 0 .5px currentColor) drop-shadow(0 0 .5px currentColor); }

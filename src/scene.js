@@ -344,7 +344,7 @@ const SHOTS = [
     el: '.about__row', from: 1, to: 0.25,
     l: { cam: [0.2, 2.9, -4.9], tgt: [-1.25, 1.0, 0], ox: 0.31, oy: 0.02 },
     p: { cam: [1.4, 4.2, -7.4], tgt: [-1.2, 1.0, 0], ox: 0.1, oy: 0.3 },
-    s: { waves: 0.3, dim: 0.8 },
+    s: { waves: 0.3, dim: 0.8 }, pdim: 0.38,
   },
   { // pilares y cifras: la cámara se eleva y la escena queda de fondo
     el: '.pillars', from: 1, to: 0.3,
@@ -407,7 +407,7 @@ const SHOTS = [
   { // galería · travelling a ras de suelo junto al público
     el: '#galeria', from: 1, to: 0,
     l: { cam: [-7.6, 1.55, -3.4], tgt: [0.4, 1.05, 1.4], ox: 0, oy: -0.04 },
-    s: { b: 1, lb: 1, arcs: 0.6, time: 1, room: 1, dim: 0.5 },
+    s: { b: 1, lb: 1, arcs: 0.6, time: 1, room: 1, dim: 0.5 }, pdim: 0.2,
   },
   { // publicaciones · los folios salen volando del atril
     el: '#publicaciones', from: 1, to: 0,
@@ -646,6 +646,7 @@ export function createScene(canvas, { reduced = false } = {}) {
     for (let i = 0; i < 3; i++) { out.cam[i] = lerp(l.cam[i], p.cam[i], f); out.tgt[i] = lerp(l.tgt[i], p.tgt[i], f); }
     const s = { ...BASE, ...shot.s };
     for (const k of NUM) out[k] = s[k] ?? 0;
+    if (shot.pdim != null) out.dim = lerp(out.dim, shot.pdim, f); // en vertical la escena cae bajo el texto
     out.ox = lerp(l.ox, p.ox, f); out.oy = lerp(l.oy, p.oy, f);
     return out;
   }

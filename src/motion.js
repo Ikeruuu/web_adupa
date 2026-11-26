@@ -79,6 +79,7 @@ function initChrome() {
     onUpdate(self) {
       const y = self.scroll();
       nav.classList.toggle('is-hidden', self.direction === 1 && y > 400);
+      nav.classList.toggle('is-stuck', y > 120);
       if (self.direction === 1 && Math.abs(self.getVelocity()) > 600) { setMenu(false); setJoin(false); }
       const secs = Math.round(self.progress * 420);
       if (secs !== last) { last = secs; time.textContent = `${pad(Math.floor(secs / 60))}:${pad(secs % 60)}`; }
