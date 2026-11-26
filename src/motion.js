@@ -41,19 +41,30 @@ function initAnchors() {
   });
 }
 
-/* ---------- menú móvil ---------- */
+/* ---------- desplegables: menú y «Únete» ---------- */
+const root = document.documentElement;
 function setMenu(open) {
-  const root = document.documentElement;
   if (root.classList.contains('menu-open') === open) return;
+  if (open) setJoin(false);
   root.classList.toggle('menu-open', open);
-  const b = $('.burger');
-  b.setAttribute('aria-expanded', String(open));
+  $('.burger').setAttribute('aria-expanded', String(open));
   $('#menu').setAttribute('aria-hidden', String(!open));
-  if (open) lenis?.stop(); else lenis?.start();
+}
+function setJoin(open) {
+  if (root.classList.contains('join-open') === open) return;
+  if (open) setMenu(false);
+  root.classList.toggle('join-open', open);
+  $('[data-join-toggle]').setAttribute('aria-expanded', String(open));
+  $('#joinpop').setAttribute('aria-hidden', String(!open));
 }
 function initMenu() {
-  $('.burger').addEventListener('click', () => setMenu(!document.documentElement.classList.contains('menu-open')));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+  $('.burger').addEventListener('click', () => setMenu(!root.classList.contains('menu-open')));
+  $('[data-join-toggle]').addEventListener('click', () => setJoin(!root.classList.contains('join-open')));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { setMenu(false); setJoin(false); } });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.menu, .burger')) setMenu(false);
+    if (!e.target.closest('[data-join-toggle]')) setJoin(false);
+  });
   matchMedia('(min-width: 1101px)').addEventListener('change', () => setMenu(false));
 }
 
@@ -68,6 +79,7 @@ function initChrome() {
     onUpdate(self) {
       const y = self.scroll();
       nav.classList.toggle('is-hidden', self.direction === 1 && y > 400);
+      if (self.direction === 1 && Math.abs(self.getVelocity()) > 600) { setMenu(false); setJoin(false); }
       const secs = Math.round(self.progress * 420);
       if (secs !== last) { last = secs; time.textContent = `${pad(Math.floor(secs / 60))}:${pad(secs % 60)}`; }
       bar.style.transform = `scaleX(${self.progress.toFixed(4)})`;
@@ -121,6 +133,27 @@ export function initReveals() {
       });
     });
 
+    $$('[data-reveal="chars"]').forEach((el) => {
+      SplitText.create(el, {
+        type: 'lines,chars', mask: 'lines', autoSplit: true,
+        onSplit: (self) => gsap.from(self.chars, {
+          yPercent: 118, rotation: 7, duration: 1.25, ease: 'expo.out', stagger: 0.03,
+          scrollTrigger: { trigger: el, start: 'top 88%', once: true },
+        }),
+      });
+      if (!el.closest('.gallery')) {
+        gsap.fromTo(el, { xPercent: 7 }, { xPercent: 0, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'top 15%', scrub: 0.5 } });
+      }
+    });
+
+    // redes: cada fila entra desde un lado, ligada al scroll
+    $$('.socials li').forEach((li, i) => {
+      gsap.fromTo(li, { xPercent: i % 2 ? 14 : -14, autoAlpha: 0 }, {
+        xPercent: 0, autoAlpha: 1, ease: 'power2.out',
+        scrollTrigger: { trigger: li, start: 'top 98%', end: 'top 68%', scrub: 0.5 },
+      });
+    });
+
     $$('[data-reveal="words"]').forEach((el) => {
       SplitText.create(el, {
         type: 'words', autoSplit: true,
@@ -170,15 +203,6 @@ function initScrub() {
   gsap.to('.hero__title', { yPercent: -22, ease: 'none', scrollTrigger: { trigger: '#quienes', start: 'top bottom', end: 'top top', scrub: true } });
   gsap.to('.hero__side, .hero__top', { y: -70, autoAlpha: 0, ease: 'none', scrollTrigger: { trigger: '#quienes', start: 'top bottom', end: 'top 45%', scrub: true } });
 
-  // las hojas llegan estrechas y se abren
-  $$('.about, .cal, .posts').forEach((sheet) => {
-    const r = getComputedStyle(sheet).borderTopLeftRadius;
-    gsap.fromTo(sheet, { clipPath: `inset(0% 4.5% 0% 4.5% round ${r})` }, {
-      clipPath: `inset(0% 0% 0% 0% round ${r})`, ease: 'none',
-      scrollTrigger: { trigger: sheet, start: 'top bottom', end: 'top 30%', scrub: true },
-    });
-  });
-
   $$('[data-spin]').forEach((el) => {
     gsap.to(el, { rotation: 300, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 0.6 } });
   });
@@ -204,12 +228,14 @@ function initGallery() {
       const padX = parseFloat(getComputedStyle(viewport).paddingLeft) || 0;
       return Math.max(0, track.scrollWidth - viewport.clientWidth + padX * 2);
     };
+    const skew = gsap.quickTo(track, 'skewX', { duration: 0.6, ease: 'power3' });
     gsap.to(track, {
       x: () => -dist(), ease: 'none',
       scrollTrigger: {
         trigger: '.gallery', pin: true, start: 'top top', end: () => `+=${dist()}`,
         scrub: 0.7, invalidateOnRefresh: true, anticipatePin: 1,
-        onUpdate: (self) => paint(self.progress),
+        onUpdate: (self) => { paint(self.progress); skew(gsap.utils.clamp(-7, 7, self.getVelocity() / -320)); },
+        onLeave: () => skew(0), onLeaveBack: () => skew(0),
       },
     });
     return undefined;
@@ -301,16 +327,13 @@ export async function initMotion(stage) {
   reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2500))]); } catch { /* seguimos */ }
 
-  initScroll();
-  initAnchors();
-  initMenu();
-  wrapHeroLines();
-  initChrome();
-  initScrub();
-  initGallery();
-  initReveals();
-  initPointer();
-  playIntro(stage);
+  // cada bloque por separado: si uno falla, el resto (y sobre todo la intro) sigue adelante
+  const safe = (fn, ...args) => { try { fn(...args); } catch (err) { console.error(`[adupa] ${fn.name}`, err); } };
+  [initScroll, initAnchors, initMenu, wrapHeroLines, initChrome, initScrub, initGallery, initReveals, initPointer].forEach((fn) => safe(fn));
+  try { playIntro(stage); } catch (err) {
+    console.error('[adupa] intro', err);
+    $('.intro')?.remove(); stage?.setBoot(1);
+  }
 
   window.addEventListener('load', () => ScrollTrigger.refresh());
 }

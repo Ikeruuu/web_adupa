@@ -1,19 +1,22 @@
 /* ==========================================================================
    Escenario 3D — «el debate se construye»
    Líneas + colores planos (sin texturas). Todo es geometría generada aquí:
-   un orador en su atril, su rival, la esfera-cronómetro del suelo y la sala.
-   El scroll mueve la cámara entre planos y va «dibujando» cada pieza.
+   una oradora y un orador (siluetas lisas, sin cara) en sus atriles,
+   la esfera-cronómetro del suelo y la sala con público y jurado.
+   El scroll mueve la cámara de un plano a otro a lo largo de toda la página:
+   es un único viaje, de la primera palabra al último colaborador.
    ========================================================================== */
 import * as THREE from 'three';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const C = {
   cream: 0xe9ecdc, pale: 0xcfd8c4, sage: 0xa3b596, sageHi: 0xb7c5aa,
   g400: 0x6c8a78, g500: 0x4a6858, brand: 0x344e41, brandHi: 0x3f5d4d,
-  g700: 0x263b30, g750: 0x2e4638, g800: 0x1c2c24, floor: 0x19281f,
-  gold: 0xc9a559, line: 0xe6e9d9, lineDim: 0x8ba392, tick: 0x587464,
+  g700: 0x22362c, g750: 0x1a2a22, g800: 0x14201a, floor: 0x19281f,
+  gold: 0xd2ae62, line: 0xeef0e4, lineDim: 0xa9bdad, tick: 0x7e9b89,
 };
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -83,13 +86,6 @@ function part(geo, color, mat, threshold = 18) {
   return g;
 }
 
-/** Pieza solo de línea (sin relleno) compatible con Build. */
-function linePart(line) {
-  const g = new THREE.Group(); g.add(line);
-  g.userData = { mat: { uniforms: { uOpacity: { value: 1 } } }, lg: line.geometry, count: line.userData.count };
-  return g;
-}
-
 function polyline(points, mat, closed = false) {
   const pos = [];
   const n = points.length;
@@ -118,43 +114,188 @@ class Build {
   }
 }
 
-/* ---------- orador ---------- */
-function makeSpeaker(M, tones) {
+/* ---------- personas: silueta lisa, sin cara ----------
+   Volúmenes suaves fundidos en una sola malla por figura, color plano con una
+   sombra de dos tonos y contorno fino. Aparecen «subiendo» desde el suelo. */
+const hullRes = { value: new THREE.Vector2(1, 1) };
+const LIGHT = new THREE.Vector3(0.35, 0.85, -0.55).normalize();
+
+function tint(geo, color) {
+  const c = new THREE.Color(color);
+  const n = geo.attributes.position.count;
+  const arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { arr[i * 3] = c.r; arr[i * 3 + 1] = c.g; arr[i * 3 + 2] = c.b; }
+  geo.setAttribute('aColor', new THREE.BufferAttribute(arr, 3));
+  return geo;
+}
+
+function bodyMats(lineColor, px) {
+  const cut = { value: 1e3 };
+  const fill = new THREE.ShaderMaterial({
+    uniforms: { uCut: cut, uLight: { value: LIGHT } },
+    vertexShader: /* glsl */`
+      attribute vec3 aColor;
+      varying vec3 vC; varying vec3 vN; varying vec3 vW;
+      void main() {
+        vC = aColor;
+        vN = mat3(modelMatrix) * normal;
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform float uCut; uniform vec3 uLight;
+      varying vec3 vC; varying vec3 vN; varying vec3 vW;
+      void main() {
+        if (vW.y > uCut) discard;
+        float l = dot(normalize(vN), uLight);
+        gl_FragColor = vec4(vC * (l > -0.05 ? 1.0 : 0.8), 1.0);
+        #include <colorspace_fragment>
+      }`,
+    side: THREE.DoubleSide,
+  });
+  const hull = new THREE.ShaderMaterial({
+    uniforms: { uCut: cut, uRes: hullRes, uPx: { value: px }, uColor: { value: new THREE.Color(lineColor) } },
+    vertexShader: /* glsl */`
+      uniform vec2 uRes; uniform float uPx;
+      varying vec3 vW;
+      void main() {
+        vec4 w = modelMatrix * vec4(position, 1.0);
+        vW = w.xyz;
+        vec4 clip = projectionMatrix * viewMatrix * w;
+        vec4 nClip = projectionMatrix * viewMatrix * vec4(normalize(mat3(modelMatrix) * normal), 0.0);
+        vec2 dir = nClip.xy * uRes;
+        float len = length(dir);
+        if (len > 1e-6) clip.xy += (dir / len) / uRes * 2.0 * uPx * clip.w; // grosor constante en píxeles
+        gl_Position = clip;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform float uCut; uniform vec3 uColor;
+      varying vec3 vW;
+      void main() {
+        if (vW.y > uCut) discard;
+        gl_FragColor = vec4(uColor, 1.0);
+        #include <colorspace_fragment>
+      }`,
+    side: THREE.BackSide,
+  });
+  return { cut, fill, hull };
+}
+
+function skinned(geos, mats) {
+  const geo = mergeGeometries(geos, false);
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(geo, mats.fill), new THREE.Mesh(geo, mats.hull));
+  g.children.forEach((m) => { m.frustumCulled = false; });
+  return g;
+}
+
+/** Aparición de una figura: sube un plano de corte desde los pies. */
+class Rise {
+  constructor(root, mats, base = 0, height = 1.9) { this.root = root; this.mats = mats; this.base = base; this.h = height; this.p = -1; }
+  set(p) {
+    if (Math.abs(p - this.p) < 0.0005) return;
+    this.p = p;
+    this.root.visible = p > 0.002;
+    this.mats.cut.value = p >= 0.999 ? 1e3 : this.base + easeIO(p) * this.h;
+  }
+}
+
+const profile = (pts, sx, sz) => {
+  const curve = new THREE.SplineCurve(pts.map(([r, y]) => new THREE.Vector2(r, y)));
+  const g = new THREE.LatheGeometry(curve.getPoints(26), 30);
+  g.scale(sx, 1, sz);
+  return g;
+};
+const TORSO = {
+  a: { pts: [[0.176, 0.86], [0.166, 0.96], [0.153, 1.06], [0.166, 1.18], [0.182, 1.29], [0.188, 1.37], [0.172, 1.418], [0.128, 1.447], [0.074, 1.466], [0.05, 1.476]], sx: 1.12, sz: 0.64, shoulder: 0.215 },
+  b: { pts: [[0.19, 0.86], [0.176, 0.96], [0.14, 1.07], [0.157, 1.18], [0.172, 1.29], [0.173, 1.37], [0.156, 1.418], [0.115, 1.447], [0.068, 1.466], [0.046, 1.476]], sx: 1.1, sz: 0.66, shoulder: 0.198 },
+};
+
+function hairGeos(style, color) {
+  const out = [];
+  const cap = new THREE.SphereGeometry(0.113, 30, 14, 0, Math.PI * 2, 0, Math.PI * 0.43);
+  cap.scale(0.93, 1.1, 1.0); cap.rotateX(style === 'short' ? -0.62 : -0.5); cap.translate(0, 0.012, -0.012);
+  out.push(tint(cap, color));
+  if (style === 'bun') {
+    const bun = new THREE.SphereGeometry(0.052, 18, 14); bun.translate(0, 0.085, -0.118);
+    out.push(tint(bun, color));
+  } else if (style === 'bob') {
+    const back = new THREE.SphereGeometry(1, 22, 16); back.scale(0.108, 0.145, 0.078); back.translate(0, -0.055, -0.052);
+    out.push(tint(back, color));
+  }
+  return out;
+}
+
+function armParts(tones, side) {
+  const upper = new THREE.CapsuleGeometry(0.05, 0.25, 6, 16); upper.translate(0, -0.125, 0);
+  const fore = new THREE.CapsuleGeometry(0.042, 0.2, 6, 16); fore.translate(0, -0.1, 0);
+  const hand = new THREE.SphereGeometry(1, 16, 12); hand.scale(0.035, 0.058, 0.024); hand.translate(0.004 * side, -0.275, 0);
+  return { upper: tint(upper, tones.jacket), lower: [tint(fore, tones.jacket), tint(hand, tones.skin)] };
+}
+
+/**
+ * tones: { jacket, shirt, trousers, skin, hair, shoes } · opts: build 'a'|'b', hair 'short'|'bun'|'bob',
+ * seated (busto fundido en una malla, sin articular), line (color del contorno), px (grosor)
+ */
+function makeHuman(tones, { build = 'a', hair = 'short', seated = false, line = C.line, px = 1.2, base = 0 } = {}) {
+  const T = TORSO[build];
+  const mats = bodyMats(line, px);
   const root = new THREE.Group();
-  const parts = [];
-  const add = (p, parent = root) => { parent.add(p); parts.push(p); return p; };
+  const body = [];
 
-  const gown = new THREE.CylinderGeometry(0.19, 0.35, 0.95, 7); gown.scale(1, 1, 0.8); gown.translate(0, 0.475, 0);
-  add(part(gown, tones.gown, M.line));
-  const torso = new THREE.CylinderGeometry(0.255, 0.19, 0.48, 7); torso.scale(1, 1, 0.62); torso.translate(0, 1.19, 0);
-  add(part(torso, tones.torso, M.line));
-  const neck = new THREE.CylinderGeometry(0.058, 0.07, 0.1, 6); neck.translate(0, 1.475, 0);
-  add(part(neck, tones.skin, M.line));
-  // beca: la banda en V de los actos académicos
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  add(linePart(polyline([V(-0.175, 1.425, 0.122), V(0, 1.1, 0.146), V(0.175, 1.425, 0.122)], M.goldBold)));
+  if (!seated) {
+    [-1, 1].forEach((s) => {
+      const leg = new THREE.CylinderGeometry(0.083, 0.056, 0.84, 18); leg.translate(0.092 * s, 0.5, 0);
+      const shoe = new THREE.SphereGeometry(1, 16, 10); shoe.scale(0.056, 0.042, 0.122); shoe.translate(0.092 * s, 0.042, 0.036);
+      body.push(tint(leg, tones.trousers), tint(shoe, tones.shoes));
+    });
+  }
+  const hips = new THREE.SphereGeometry(1, 22, 14); hips.scale(build === 'b' ? 0.184 : 0.172, 0.12, 0.118); hips.translate(0, 0.93, 0);
+  body.push(tint(hips, tones.trousers));
+  body.push(tint(profile(T.pts, T.sx, T.sz), tones.jacket));
+  const shirt = new THREE.ConeGeometry(0.058, 0.17, 16); shirt.rotateX(Math.PI); shirt.scale(1, 1, 0.36); shirt.rotateX(-0.27); shirt.translate(0, 1.385, 0.1);
+  body.push(tint(shirt, tones.shirt));
+  const neck = new THREE.CylinderGeometry(0.047, 0.053, 0.13, 16); neck.translate(0, 1.5, 0);
+  body.push(tint(neck, tones.skin));
 
-  const head = new THREE.Group(); head.position.set(0, 1.68, 0.01); root.add(head);
-  const hg = new THREE.DodecahedronGeometry(0.158); hg.scale(0.92, 1.08, 0.96);
-  add(part(hg, tones.skin, M.line), head);
+  const headGeo = new THREE.SphereGeometry(0.107, 30, 22); headGeo.scale(0.9, 1.13, 0.97);
+  const headGeos = [tint(headGeo, tones.skin), ...hairGeos(hair, tones.hair)];
+  const HEAD = [0, 1.64, 0.012];
 
-  const arm = (side) => {
-    const shoulder = new THREE.Group(); shoulder.position.set(0.275 * side, 1.385, 0); root.add(shoulder);
-    const ug = new THREE.CylinderGeometry(0.056, 0.048, 0.36, 5); ug.translate(0, -0.18, 0);
-    add(part(ug, tones.torso, M.line), shoulder);
-    const elbow = new THREE.Group(); elbow.position.set(0, -0.36, 0); shoulder.add(elbow);
-    const fg = new THREE.CylinderGeometry(0.046, 0.04, 0.32, 5); fg.translate(0, -0.16, 0);
-    add(part(fg, tones.torso, M.line), elbow);
-    const hand = new THREE.OctahedronGeometry(0.06); hand.scale(0.8, 1.15, 0.6); hand.translate(0, -0.37, 0);
-    add(part(hand, tones.skin, M.line), elbow);
+  if (seated) {
+    // todo fundido: cabeza y brazos en reposo, sin articular
+    headGeos.forEach((g) => { g.translate(...HEAD); body.push(g); });
+    [-1, 1].forEach((s) => {
+      const a = armParts(tones, s);
+      const mS = new THREE.Matrix4().makeTranslation(T.shoulder * s, 1.385, 0).multiply(new THREE.Matrix4().makeRotationX(-0.32));
+      const mE = mS.clone().multiply(new THREE.Matrix4().makeTranslation(0, -0.26, 0)).multiply(new THREE.Matrix4().makeRotationX(-0.75));
+      a.upper.applyMatrix4(mS); a.lower.forEach((g) => g.applyMatrix4(mE));
+      body.push(a.upper, ...a.lower);
+    });
+    body.forEach((g) => g.translate(0, -0.46, 0));
+    root.add(skinned(body, mats));
+    return { root, build: new Rise(root, mats, base, 1.5) };
+  }
+
+  root.add(skinned(body, mats));
+  const head = new THREE.Group(); head.position.set(...HEAD); root.add(head);
+  head.add(skinned(headGeos, mats));
+
+  const arm = (s) => {
+    const a = armParts(tones, s);
+    const shoulder = new THREE.Group(); shoulder.position.set(T.shoulder * s, 1.385, 0); root.add(shoulder);
+    shoulder.add(skinned([a.upper], mats));
+    const elbow = new THREE.Group(); elbow.position.set(0, -0.26, 0); shoulder.add(elbow);
+    elbow.add(skinned(a.lower, mats));
     return { shoulder, elbow };
   };
   const armA = arm(1); const armB = arm(-1);
-  // pose de reposo: una mano en el atril
+  // pose de reposo: una mano apoyada en el atril
   armB.shoulder.rotation.set(-0.62, 0, -0.08); armB.elbow.rotation.set(-0.78, 0, 0);
   armA.shoulder.rotation.set(-0.9, 0, 0.3); armA.elbow.rotation.set(-0.9, 0, 0);
 
-  return { root, build: new Build(parts), head, armA, armB };
+  return { root, build: new Rise(root, mats, base, 1.9), head, armA, armB };
 }
 
 function makeLectern(M) {
@@ -182,45 +323,52 @@ function makeLectern(M) {
   return { root, build: new Build(parts) };
 }
 
-function makeSeat(M, gownColor, headColor, mat) {
-  const root = new THREE.Group();
-  const gown = new THREE.CylinderGeometry(0.1, 0.27, 0.86, 6); gown.translate(0, 0.43, 0);
-  const head = new THREE.DodecahedronGeometry(0.13); head.translate(0, 1.04, 0);
-  const a = part(gown, gownColor, mat); const b = part(head, headColor, mat);
-  root.add(a, b);
-  return { root, build: new Build([a, b]) };
-}
-
 /* ==========================================================================
    Planos de cámara. Cada plano tiene variante horizontal (l) y vertical (p).
    cam / tgt: posición y punto de mira · ox, oy: desplazamiento en pantalla
    ========================================================================== */
-const BASE = { a: 1, la: 1, b: 0, lb: 0, arcs: 0, waves: 0, room: 0, time: 0, hand: 0, free: 0, tagA: 0 };
+const BASE = { a: 1, la: 1, b: 0, lb: 0, arcs: 0, waves: 0, room: 0, time: 0, hand: 0, free: 0, tagA: 0, sides: 0, papers: 0, dim: 1 };
 const SHOTS = [
-  { // 0 · inicio: primer orador
+  { // inicio: la oradora
     l: { cam: [1.6, 1.58, -5.15], tgt: [-1.25, 0.96, 0], ox: 0.23, oy: 0.02 },
     p: { cam: [2.5, 1.9, -6.9], tgt: [-1.2, 0.95, 0], ox: 0.08, oy: 0.4 },
     s: { waves: 1, tagA: 1 },
   },
-  { // inicio → sale
-    el: '#quienes', from: 1, to: 0,
-    l: { cam: [2.9, 2.05, -4.7], tgt: [-1.2, 1.0, 0], ox: 0.23, oy: 0.0 },
-    p: { cam: [3.4, 2.4, -6.6], tgt: [-1.2, 1.0, 0], ox: 0.08, oy: 0.3 },
-    s: { waves: 0.4, tagA: 0 },
+  { // quiénes somos: plano medio, ella a la derecha del texto
+    el: '#quienes', from: 1, to: 0.1,
+    l: { cam: [2.5, 1.45, -3.1], tgt: [-1.3, 1.2, 0], ox: 0.31, oy: 0 },
+    p: { cam: [3.6, 2.2, -6.2], tgt: [-1.2, 1.0, 0], ox: 0.1, oy: 0.34 },
+    s: { waves: 0.7 },
+  },
+  {
+    el: '.about__row', from: 1, to: 0.25,
+    l: { cam: [0.2, 2.9, -4.9], tgt: [-1.25, 1.0, 0], ox: 0.31, oy: 0.02 },
+    p: { cam: [1.4, 4.2, -7.4], tgt: [-1.2, 1.0, 0], ox: 0.1, oy: 0.3 },
+    s: { waves: 0.3, dim: 0.8 },
+  },
+  { // pilares y cifras: la cámara se eleva y la escena queda de fondo
+    el: '.pillars', from: 1, to: 0.3,
+    l: { cam: [4.2, 6.5, -9.5], tgt: [0, 0.6, 0], ox: 0.05, oy: 0 },
+    s: { dim: 0.2 },
+  },
+  {
+    el: '.facts', from: 1, to: 0.2,
+    l: { cam: [1.5, 9.5, -8.5], tgt: [0, 0.4, 0], ox: 0, oy: 0 },
+    s: { dim: 0.2, lb: 0.6 },
   },
   { // acto I · dos posturas
     el: '#act-1', from: 1.05, to: 0,
     l: { cam: [0.6, 1.75, -9.6], tgt: [0, 1.12, 0], ox: 0.2, oy: 0.02 },
     p: { cam: [10.3, 2.9, -7.9], tgt: [0, 1.0, 0], ox: 0, oy: 0.2 },
-    s: { b: 1, lb: 1, arcs: 0.5 },
+    s: { b: 1, lb: 1, arcs: 0.5, sides: 1 },
   },
   {
     el: '#act-1', from: 0, to: -0.9,
     l: { cam: [-1.6, 2.3, -9.3], tgt: [0, 1.1, 0], ox: 0.2, oy: 0.02 },
     p: { cam: [9.2, 3.6, -9.2], tgt: [0, 1.0, 0], ox: 0, oy: 0.2 },
-    s: { b: 1, lb: 1, arcs: 1 },
+    s: { b: 1, lb: 1, arcs: 1, sides: 1 },
   },
-  { // acto II · siete minutos (vista cenital, el suelo es un cronómetro)
+  { // acto II · siete minutos (el suelo es un cronómetro)
     el: '#act-2', from: 1, to: 0,
     l: { cam: [0, 14.2, -5.4], tgt: [0, 0, 0], ox: 0.21, oy: 0 },
     p: { cam: [0, 33, -9], tgt: [0, 0, 0], ox: 0, oy: 0.16 },
@@ -244,21 +392,82 @@ const SHOTS = [
     p: { cam: [17.5, 10.5, -12], tgt: [0, 0.4, 0.8], ox: 0, oy: 0.16 },
     s: { b: 1, lb: 1, arcs: 1, hand: 1, time: 1, room: 1 },
   },
-  { // únete · el atril libre
-    el: '#unete', from: 1.9, to: 0.8,
-    l: { cam: [4.5, 2.15, -2.9], tgt: [0.75, 1.02, 0.25], ox: 0.2, oy: 0.02 },
-    p: { cam: [6.4, 2.7, -4.3], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.36 },
-    s: { b: 0, lb: 1, arcs: 0, hand: 0, time: 1, room: 1, free: 1 },
+  { // calendario · portada: el reloj de la sala
+    el: '#calendario', from: 1, to: 0,
+    l: { cam: [0, 13.5, -5.2], tgt: [0, 0, 0], ox: 0.27, oy: 0.2 },
+    p: { cam: [0, 30, -10], tgt: [0, 0, 0], ox: 0, oy: 0.2 },
+    s: { b: 1, lb: 1, arcs: 0.2, hand: 1, time: 0.15, room: 1 },
   },
   {
-    el: '#unete', from: 0.8, to: -0.4,
+    el: '.cal__layout', from: 1, to: 0.3,
+    l: { cam: [0, 17, -1.8], tgt: [0, 0, 0], ox: 0, oy: 0 },
+    p: { cam: [0, 34, -4], tgt: [0, 0, 0], ox: 0, oy: 0 },
+    s: { b: 1, lb: 1, arcs: 0.2, hand: 1, time: 0.62, room: 1, dim: 0.16 },
+  },
+  { // galería · travelling a ras de suelo junto al público
+    el: '#galeria', from: 1, to: 0,
+    l: { cam: [-7.6, 1.55, -3.4], tgt: [0.4, 1.05, 1.4], ox: 0, oy: -0.04 },
+    s: { b: 1, lb: 1, arcs: 0.6, time: 1, room: 1, dim: 0.5 },
+  },
+  { // publicaciones · los folios salen volando del atril
+    el: '#publicaciones', from: 1, to: 0,
+    l: { cam: [1.2, 1.3, -7.2], tgt: [0, 2.3, 0], ox: 0.2, oy: 0.06 },
+    p: { cam: [2, 1.6, -13], tgt: [0, 2.4, 0], ox: 0, oy: 0.18 },
+    s: { b: 1, lb: 1, arcs: 1, room: 1, time: 1, papers: 0.75 },
+  },
+  {
+    el: '#posts-board', from: 1, to: 0.3,
+    l: { cam: [3.2, 2.4, -8], tgt: [0, 2.6, 0], ox: 0, oy: 0 },
+    s: { b: 1, lb: 1, arcs: 1, room: 1, time: 1, papers: 1, dim: 0.3 },
+  },
+  {
+    el: '.socials', from: 1, to: 0.2,
+    l: { cam: [-2.6, 5, -8.6], tgt: [0, 2.2, 0], ox: 0, oy: 0 },
+    s: { b: 1, lb: 1, arcs: 0.5, room: 1, time: 1, papers: 1, dim: 0.28 },
+  },
+  { // únete · el atril libre
+    el: '#unete', from: 1.3, to: 0.45,
+    l: { cam: [4.5, 2.15, -2.9], tgt: [0.75, 1.02, 0.25], ox: 0.2, oy: 0.02 },
+    p: { cam: [6.4, 2.7, -4.3], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.36 },
+    s: { b: 0, lb: 1, time: 1, room: 1, free: 1, papers: 0.3 },
+  },
+  {
+    el: '#unete', from: 0.45, to: -0.4,
     l: { cam: [3.6, 1.85, -2.2], tgt: [0.8, 1.05, 0.25], ox: 0.2, oy: 0.02 },
     p: { cam: [5.5, 2.4, -3.6], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.3 },
-    s: { b: 0, lb: 1, arcs: 0, hand: 0, time: 1, room: 1, free: 1 },
+    s: { b: 0, lb: 1, time: 1, room: 1, free: 1, papers: 0.15 },
+  },
+  { // documentos · sobre el folio del atril
+    el: '#documentos', from: 1, to: 0,
+    l: { cam: [1.75, 4.6, -1.5], tgt: [0.95, 1.1, 0.05], ox: 0.27, oy: 0.14 },
+    p: { cam: [3.4, 5.4, -3.6], tgt: [0.95, 1.1, 0.05], ox: 0, oy: 0.2 },
+    s: { b: 0, lb: 1, room: 1, time: 1 },
+  },
+  {
+    el: '#docs-grid', from: 1, to: 0.3,
+    l: { cam: [1.9, 6.4, -1.9], tgt: [0.95, 1.1, 0.05], ox: 0, oy: 0 },
+    s: { b: 0, lb: 1, room: 1, time: 1, dim: 0.16 },
+  },
+  { // colaboradores · la sala entera
+    el: '#colaboradores', from: 1, to: 0,
+    l: { cam: [0, 9, -17], tgt: [0, 0.9, 0.5], ox: 0.2, oy: 0.2 },
+    p: { cam: [0, 12, -25], tgt: [0, 0.9, 0.5], ox: 0, oy: 0.18 },
+    s: { b: 1, lb: 1, arcs: 1, room: 1, time: 1, hand: 1 },
+  },
+  {
+    el: '#collab-grid', from: 1, to: 0.3,
+    l: { cam: [3, 9, -13], tgt: [0, 0.6, 0.5], ox: 0, oy: 0 },
+    s: { b: 1, lb: 1, arcs: 1, room: 1, time: 1, hand: 1, dim: 0.16 },
   },
 ];
+// sin variante vertical propia: misma mirada, más lejos y centrada
+SHOTS.forEach((sh) => {
+  if (sh.p) return;
+  const { cam, tgt } = sh.l;
+  sh.p = { cam: cam.map((c, i) => tgt[i] + (c - tgt[i]) * 1.8), tgt, ox: 0, oy: 0.12 };
+});
 
-const NUM = ['ox', 'oy', 'a', 'la', 'b', 'lb', 'arcs', 'waves', 'room', 'time', 'hand', 'free', 'tagA'];
+const NUM = ['ox', 'oy', 'a', 'la', 'b', 'lb', 'arcs', 'waves', 'room', 'time', 'hand', 'free', 'tagA', 'sides', 'papers', 'dim'];
 
 export function createScene(canvas, { reduced = false } = {}) {
   const coarse = matchMedia('(max-width: 899px), (pointer: coarse)').matches;
@@ -315,8 +524,9 @@ export function createScene(canvas, { reduced = false } = {}) {
   const stationA = new THREE.Group(); stationA.position.set(-X, 0, 0); stationA.rotation.y = Math.PI / 2; scene.add(stationA);
   const stationB = new THREE.Group(); stationB.position.set(X, 0, 0); stationB.rotation.y = -Math.PI / 2; scene.add(stationB);
 
-  const spA = makeSpeaker(M, { gown: C.brand, torso: C.brandHi, skin: C.pale });
-  const spB = makeSpeaker(M, { gown: C.sage, torso: C.sageHi, skin: C.cream });
+  const PX = coarse ? 1.05 : 1.25;
+  const spA = makeHuman({ jacket: 0x14201a, shirt: 0xeef0e4, trousers: 0x1c2c24, skin: 0xe3e6d3, hair: 0x0d1511, shoes: 0x0d1511 }, { build: 'a', hair: 'short', px: PX });
+  const spB = makeHuman({ jacket: 0xc7d3bb, shirt: 0x263b30, trousers: 0xa3b79f, skin: 0xeef0e4, hair: 0xd2ae62, shoes: 0x1c2c24 }, { build: 'b', hair: 'bun', px: PX });
   const lecA = makeLectern(M); lecA.root.position.z = 0.52;
   const lecB = makeLectern(M); lecB.root.position.z = 0.52;
   stationA.add(spA.root, lecA.root); stationB.add(spB.root, lecB.root);
@@ -339,6 +549,58 @@ export function createScene(canvas, { reduced = false } = {}) {
     arcs.push({ l, m, dir, n: 56 });
   });
 
+  /* ---- folios: salen del atril y dan vueltas sobre la sala ---- */
+  const PAPERS = coarse ? 30 : 70;
+  const paperMat = new THREE.ShaderMaterial({
+    uniforms: { uLight: { value: LIGHT } },
+    vertexShader: /* glsl */`
+      varying vec3 vW;
+      void main() {
+        vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vW = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform vec3 uLight; varying vec3 vW;
+      void main() {
+        vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
+        float l = abs(dot(n, uLight));
+        vec3 c = vec3(0.871, 0.880, 0.790) * (l > 0.5 ? 1.0 : (l > 0.2 ? 0.86 : 0.72));
+        gl_FragColor = vec4(c, 1.0);
+        #include <colorspace_fragment>
+      }`,
+    side: THREE.DoubleSide,
+  });
+  const papers = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.21, 0.297), paperMat, PAPERS);
+  papers.frustumCulled = false; papers.visible = false; scene.add(papers);
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const flock = Array.from({ length: PAPERS }, (_, i) => ({
+    a: rnd() * 6.283, r: 0.9 + rnd() * 3.6, h: 0.5 + rnd() * 3.9, sp: 0.18 + rnd() * 0.4, ph: rnd() * 6.283, d: (i / PAPERS) * 0.55,
+  }));
+  const dummy = new THREE.Object3D();
+  const DESK = new THREE.Vector3(-X + 0.52, 1.16, 0);
+  function flyPapers(amount, t) {
+    papers.visible = amount > 0.004;
+    if (!papers.visible) return;
+    for (let i = 0; i < PAPERS; i++) {
+      const f = flock[i];
+      const q = clamp01(amount * 1.55 - f.d);
+      const e = 1 - Math.pow(1 - q, 3);
+      const ang = f.a + e * 2.4 + t * f.sp * 0.3;
+      dummy.position.set(
+        lerp(DESK.x, Math.cos(ang) * f.r, e),
+        DESK.y + e * f.h + Math.sin(t * 0.7 + f.ph) * 0.14 * e,
+        lerp(DESK.z, Math.sin(ang) * f.r * 0.85, e),
+      );
+      dummy.rotation.set(f.ph + t * f.sp + e * 5, f.a + t * f.sp * 0.7, e * 3 + f.ph);
+      dummy.scale.setScalar(smooth(0, 0.14, q));
+      dummy.updateMatrix();
+      papers.setMatrixAt(i, dummy.matrix);
+    }
+    papers.instanceMatrix.needsUpdate = true;
+  }
+
   /* ---- la sala: público en hemiciclo y mesa del jurado ---- */
   const seats = [];
   const room = new THREE.Group(); scene.add(room);
@@ -351,7 +613,11 @@ export function createScene(canvas, { reduced = false } = {}) {
     seats.push({ build: new Build([desk]), order: ri * 0.3 });
     for (let i = 0; i < n; i++) {
       const a = lerp(a0, a1, n > 1 ? i / (n - 1) : 0.5);
-      const s = makeSeat(M, (i + ri) % 3 === 0 ? C.g500 : C.g700, C.g400, M.dim);
+      const k = i + ri * 2;
+      const s = makeHuman({
+        jacket: [0x22362c, 0x1a2a22, 0x2a4135][k % 3], shirt: 0x6c8a78, trousers: 0x14201a, skin: 0xa4b9a8,
+        hair: [0x14201a, 0x6c8a78, 0x1c2c24][k % 3], shoes: 0x14201a,
+      }, { build: k % 2 ? 'a' : 'b', hair: ['bob', 'short', 'bun', 'short'][k % 4], seated: true, line: C.lineDim, px: 0.9, base: y });
       s.root.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
       s.root.rotation.y = Math.atan2(-Math.cos(a), -Math.sin(a));
       room.add(s.root);
@@ -362,7 +628,8 @@ export function createScene(canvas, { reduced = false } = {}) {
   const table = part(tableG, C.g700, M.line); room.add(table);
   seats.push({ build: new Build([table]), order: 0.05 });
   [-0.72, 0, 0.72].forEach((x, i) => {
-    const s = makeSeat(M, C.brand, C.pale, M.line);
+    const s = makeHuman({ jacket: [0x1c2c24, 0x26392f, 0x1c2c24][i], shirt: 0xcfd8c4, trousers: 0x14201a, skin: 0xd5dcc8, hair: [0x0d1511, 0xd2ae62, 0x6c8a78][i], shoes: 0x14201a },
+      { build: i === 1 ? 'b' : 'a', hair: i === 1 ? 'bob' : 'short', seated: true, line: C.line, px: 1.0 });
     s.root.position.set(x, 0, -4.2); room.add(s.root);
     seats.push({ build: s.build, order: 0.2 + i * 0.1 });
   });
@@ -406,6 +673,7 @@ export function createScene(canvas, { reduced = false } = {}) {
     camera.aspect = W / H;
     portrait = clamp01((1.3 - camera.aspect) / 0.7);
     lineMats.forEach((m) => m.resolution.set(W, H));
+    hullRes.value.set(W, H);
     first = true;
   }
 
@@ -434,7 +702,7 @@ export function createScene(canvas, { reduced = false } = {}) {
 
   /* ---- bucle ---- */
   const clock = new THREE.Clock();
-  let active = true; let raf = 0; let time = 0;
+  let active = true; let raf = 0; let time = 0; let lastDim = -1;
   const up = new THREE.Vector3(0, 1, 0); const right = new THREE.Vector3(); const camPos = new THREE.Vector3(); const tgt = new THREE.Vector3();
 
   function frame() {
@@ -498,6 +766,12 @@ export function createScene(canvas, { reduced = false } = {}) {
     timeArc.visible = cur.hand > 0.02 && cur.time > 0.002;
     timeArc.geometry.instanceCount = Math.ceil(clamp01(cur.time) * ARC_N);
 
+    // folios
+    flyPapers(cur.papers, time);
+
+    // en los tramos con mucho contenido la escena se atenúa y queda de fondo
+    if (Math.abs(cur.dim - lastDim) > 0.004) { lastDim = cur.dim; canvas.style.opacity = cur.dim.toFixed(3); }
+
     // gesto
     if (!reduced) {
       const t = time;
@@ -513,9 +787,9 @@ export function createScene(canvas, { reduced = false } = {}) {
     renderer.render(scene, camera);
 
     placeTags((key) => {
-      if (key === 'sides') return smooth(0.3, 0.9, cur.b) * (1 - smooth(0.02, 0.2, cur.hand));
+      if (key === 'sides') return smooth(0.5, 1, cur.sides) * smooth(0.4, 0.9, cur.b);
       if (key === 'tagA') return cur.tagA * smooth(0.85, 1, boot);
-      return smooth(0.6, 1, cur[key]);
+      return smooth(0.6, 1, cur[key]) * smooth(0.6, 1, cur.dim);
     });
   }
 
@@ -527,13 +801,13 @@ export function createScene(canvas, { reduced = false } = {}) {
     }, { passive: true });
   }
 
-  // solo se renderiza cuando alguna «ventana» al escenario está en pantalla
+  // se renderiza durante todo el viaje; solo descansa en los logos y el pie
   const seen = new Set();
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target)));
     active = seen.size > 0;
   }, { rootMargin: '25% 0px' });
-  document.querySelectorAll('[data-stage]').forEach((el) => io.observe(el));
+  document.querySelectorAll('main > section:not(.partners)').forEach((el) => io.observe(el));
 
   frame();
 

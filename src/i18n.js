@@ -18,6 +18,12 @@ export const dict = {
     'nav.menu': 'Menú',
     'nav.close': 'Cerrar',
     'nav.lang': 'Cambiar idioma',
+    'menu.g1': 'La asociación',
+    'menu.g2': 'Actividad',
+    'join.pop.wa': 'Grupo de WhatsApp',
+    'join.pop.wa.d': 'Entérate de cada sesión',
+    'join.pop.form': 'Formulario',
+    'join.pop.form.d': 'Déjanos tus datos y te escribimos',
 
     'hud.label': 'Turno',
 
@@ -135,6 +141,12 @@ export const dict = {
     'nav.menu': 'Menu',
     'nav.close': 'Close',
     'nav.lang': 'Change language',
+    'menu.g1': 'The association',
+    'menu.g2': 'Activity',
+    'join.pop.wa': 'WhatsApp group',
+    'join.pop.wa.d': 'Hear about every session',
+    'join.pop.form': 'Sign-up form',
+    'join.pop.form.d': 'Leave your details and we’ll write',
 
     'hud.label': 'Speech',
 

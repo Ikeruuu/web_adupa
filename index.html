@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>ADUPA — Asociación de Debate Universitario del Principado de Asturias</title>
   <meta name="description" content="ADUPA es la asociación de debate universitario de Asturias. Talleres, entrenamientos y torneos para aprender a argumentar, escuchar y hablar en público.">
-  <meta name="theme-color" content="#16221c">
+  <meta name="theme-color" content="#344e41">
   <link rel="canonical" href="https://adupa.es/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://adupa.es/">
@@ -44,6 +44,7 @@
     <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v18M5 14l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.600"/></symbol>
     <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.600-6.500 10-6.500S22 12 22 12s-3.600 6.500-10 6.500S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.500"/><circle cx="12" cy="12" r="2.800" fill="none" stroke="currentColor" stroke-width="1.500"/></symbol>
     <symbol id="i-cal" viewBox="0 0 24 24"><path d="M4 6.500h16V20H4zM4 10.500h16M8 3.500v5M16 3.500v5M12 13v5M9.500 15.500h5" fill="none" stroke="currentColor" stroke-width="1.500"/></symbol>
+    <symbol id="i-form" viewBox="0 0 24 24"><path d="M6 3.500h12V20.500H6zM9 8h6M9 12h6M9 16h3.500" fill="none" stroke="currentColor" stroke-width="1.500"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.600"/></symbol>
     <symbol id="i-whatsapp" viewBox="0 0 24 24"><path d="M3.500 20.500 4.800 16A8.500 8.500 0 1 1 8 19.200z" fill="none" stroke="currentColor" stroke-width="1.500" stroke-linejoin="round"/><path d="M9 8.500c-.400 2.800 3.200 6.500 6.300 6.500l1-1.600-2-1.100-.900.800c-.900-.400-1.900-1.400-2.300-2.300l.800-.900-1.100-2z" fill="currentColor"/></symbol>
     <symbol id="i-instagram" viewBox="0 0 24 24"><rect x="3.500" y="3.500" width="17" height="17" rx="4.500" fill="none" stroke="currentColor" stroke-width="1.500"/><circle cx="12" cy="12" r="3.900" fill="none" stroke="currentColor" stroke-width="1.500"/><circle cx="17" cy="7" r="1.100" fill="currentColor"/></symbol>
@@ -88,24 +89,52 @@
     <button class="lang" type="button" data-lang-toggle data-i18n-attr="aria-label:nav.lang" aria-label="Cambiar idioma">
       <span data-lang-opt="es" class="is-on">ES</span><i></i><span data-lang-opt="en">EN</span>
     </button>
-    <a class="btn btn--sm nav__join" href="#unete" data-magnetic><span data-i18n="nav.join">Únete</span></a>
+    <div class="joinbox">
+      <button class="btn btn--sm btn--solid nav__join" type="button" aria-expanded="false" aria-controls="joinpop" data-join-toggle><span data-i18n="nav.join">Únete</span></button>
+    </div>
     <button class="burger" type="button" aria-expanded="false" aria-controls="menu">
       <span class="burger__label" data-i18n="nav.menu">Menú</span><span class="burger__ico"><i></i><i></i></span>
     </button>
   </div>
 </header>
 
-<!-- Menú móvil -->
+<!-- «Únete»: WhatsApp o formulario -->
+<div class="joinpop" id="joinpop" aria-hidden="true">
+  <a data-link="whatsapp" target="_blank" rel="noopener">
+    <svg aria-hidden="true"><use href="#i-whatsapp"/></svg>
+    <span><b data-i18n="join.pop.wa">Grupo de WhatsApp</b><small data-i18n="join.pop.wa.d">Entérate de cada sesión</small></span>
+    <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+  </a>
+  <a data-link="form" target="_blank" rel="noopener">
+    <svg aria-hidden="true"><use href="#i-form"/></svg>
+    <span><b data-i18n="join.pop.form">Formulario</b><small data-i18n="join.pop.form.d">Déjanos tus datos y te escribimos</small></span>
+    <svg aria-hidden="true"><use href="#i-arrow"/></svg>
+  </a>
+</div>
+
+<!-- Menú desplegable (tablet y móvil) -->
 <div class="menu" id="menu" aria-hidden="true">
-  <nav class="menu__links" aria-label="Menú">
-    <a href="#quienes"><sup>01</sup><span data-i18n="nav.about">Quiénes somos</span></a>
-    <a href="#calendario"><sup>02</sup><span data-i18n="nav.calendar">Calendario</span></a>
-    <a href="#galeria"><sup>03</sup><span data-i18n="nav.gallery">Galería</span></a>
-    <a href="#publicaciones"><sup>04</sup><span data-i18n="nav.posts">Publicaciones</span></a>
-    <a href="#unete"><sup>05</sup><span data-i18n="nav.join">Únete</span></a>
-    <a href="#documentos"><sup>06</sup><span data-i18n="nav.docs">Documentos</span></a>
-    <a href="#colaboradores"><sup>07</sup><span data-i18n="nav.collab">Colaboradores</span></a>
+  <nav class="menu__cols" aria-label="Menú">
+    <div>
+      <p class="mono" data-i18n="menu.g1">La asociación</p>
+      <a href="#quienes" data-i18n="nav.about">Quiénes somos</a>
+      <a href="#documentos" data-i18n="nav.docs">Documentos</a>
+      <a href="#colaboradores" data-i18n="nav.collab">Colaboradores</a>
+    </div>
+    <div>
+      <p class="mono" data-i18n="menu.g2">Actividad</p>
+      <a href="#calendario" data-i18n="nav.calendar">Calendario</a>
+      <a href="#galeria" data-i18n="nav.gallery">Galería</a>
+      <a href="#publicaciones" data-i18n="nav.posts">Publicaciones</a>
+    </div>
   </nav>
+  <div class="menu__join">
+    <p class="mono" data-i18n="nav.join">Únete</p>
+    <div>
+      <a class="btn btn--solid" data-link="whatsapp" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-whatsapp"/></svg><span>WhatsApp</span></a>
+      <a class="btn btn--ghost" data-link="form" target="_blank" rel="noopener"><span data-i18n="join.pop.form">Formulario</span></a>
+    </div>
+  </div>
   <div class="menu__foot">
     <button class="lang" type="button" data-lang-toggle data-i18n-attr="aria-label:nav.lang" aria-label="Cambiar idioma">
       <span data-lang-opt="es" class="is-on">ES</span><i></i><span data-lang-opt="en">EN</span>
@@ -126,7 +155,7 @@
 <main id="main">
 
   <!-- ============ INICIO ============ -->
-  <section class="hero window" id="inicio" data-tone="dark" data-stage>
+  <section class="hero window" id="inicio" data-tone="dark">
     <div class="hero__top">
       <p class="hero__kicker" data-i18n="hero.kicker" data-reveal="lines">Asociación de Debate Universitario<br>del Principado de Asturias</p>
       <p class="hero__season mono"><span data-i18n="hero.season">Curso 2026 — 27</span><br>43.36° N · 5.85° W</p>
@@ -145,7 +174,7 @@
   </section>
 
   <!-- ============ QUIÉNES SOMOS ============ -->
-  <section class="sheet about" id="quienes" data-tone="paper">
+  <section class="sheet about" id="quienes" data-tone="dark">
     <div class="wrap">
       <header class="sec-head">
         <p class="kicker"><b>01</b><span data-i18n="about.kicker">Quiénes somos</span></p>
@@ -187,7 +216,7 @@
   </section>
 
   <!-- ============ EL DEBATE (escena 3D en tres actos) ============ -->
-  <section class="acts window" id="debate" data-tone="dark" data-stage>
+  <section class="acts window" id="debate" data-tone="dark">
     <article class="act act--1" id="act-1">
       <div class="act__box">
         <p class="kicker"><b>i</b><span data-i18n="act1.kicker">A favor / En contra</span></p>
@@ -212,12 +241,12 @@
   </section>
 
   <!-- ============ CALENDARIO ============ -->
-  <section class="sheet cal" id="calendario" data-tone="paper">
+  <section class="sheet cal" id="calendario" data-tone="dark">
     <div class="wrap">
       <header class="sec-head sec-head--split">
         <div>
           <p class="kicker"><b>02</b><span data-i18n="cal.kicker">Calendario</span></p>
-          <h2 class="sec-title" data-i18n="cal.title" data-reveal="lines">Lo que <em>viene.</em></h2>
+          <h2 class="sec-title" data-i18n="cal.title" data-reveal="chars">Lo que <em>viene.</em></h2>
         </div>
         <p class="sec-sub" data-i18n="cal.sub" data-reveal="lines">Entrenamientos, talleres, torneos y asambleas. Todo abierto a quien quiera pasarse.</p>
       </header>
@@ -246,7 +275,7 @@
       <header class="gallery__head wrap">
         <div>
           <p class="kicker"><b>03</b><span data-i18n="gal.kicker">Galería</span></p>
-          <h2 class="sec-title" data-i18n="gal.title" data-reveal="lines">Pruebas <em>gráficas.</em></h2>
+          <h2 class="sec-title" data-i18n="gal.title" data-reveal="chars">Pruebas <em>gráficas.</em></h2>
         </div>
         <p class="sec-sub" data-i18n="gal.sub" data-reveal="lines">Torneos, entrenamientos y alguna foto que quizá no debería estar aquí.</p>
       </header>
@@ -262,12 +291,12 @@
   </section>
 
   <!-- ============ PUBLICACIONES ============ -->
-  <section class="sheet posts" id="publicaciones" data-tone="paper">
+  <section class="sheet posts" id="publicaciones" data-tone="dark">
     <div class="wrap">
       <header class="sec-head sec-head--split">
         <div>
           <p class="kicker"><b>04</b><span data-i18n="posts.kicker">Publicaciones</span></p>
-          <h2 class="sec-title" data-i18n="posts.title" data-reveal="lines">Fuera de <em>la sala.</em></h2>
+          <h2 class="sec-title" data-i18n="posts.title" data-reveal="chars">Fuera de <em>la sala.</em></h2>
         </div>
         <p class="sec-sub" data-i18n="posts.sub" data-reveal="lines">Lo último que hemos contado en redes.</p>
       </header>
@@ -280,7 +309,7 @@
   </section>
 
   <!-- ============ ÚNETE ============ -->
-  <section class="join window" id="unete" data-tone="dark" data-stage>
+  <section class="join window" id="unete" data-tone="dark">
     <div class="join__box">
       <p class="kicker"><b>05</b><span data-i18n="join.kicker">Únete</span></p>
       <h2 class="join__title" data-i18n="join.title" data-reveal="lines">Tu <em>turno.</em></h2>
@@ -294,12 +323,12 @@
   </section>
 
   <!-- ============ DOCUMENTOS ============ -->
-  <section class="sheet docs" id="documentos" data-tone="paper">
+  <section class="sheet docs" id="documentos" data-tone="dark">
     <div class="wrap">
       <header class="sec-head sec-head--split">
         <div>
           <p class="kicker"><b>06</b><span data-i18n="docs.kicker">Documentos</span></p>
-          <h2 class="sec-title" data-i18n="docs.title" data-reveal="lines">Las reglas <em>del juego.</em></h2>
+          <h2 class="sec-title" data-i18n="docs.title" data-reveal="chars">Las reglas <em>del juego.</em></h2>
         </div>
         <p class="sec-sub" data-i18n="docs.sub" data-reveal="lines">Transparencia por defecto: aquí están los estatutos y el reglamento de la asociación.</p>
       </header>
@@ -308,12 +337,12 @@
   </section>
 
   <!-- ============ COLABORADORES ============ -->
-  <section class="sheet sheet--flat collab" id="colaboradores" data-tone="paper">
+  <section class="sheet sheet--flat collab" id="colaboradores" data-tone="dark">
     <div class="wrap">
       <header class="sec-head sec-head--split">
         <div>
           <p class="kicker"><b>07</b><span data-i18n="collab.kicker">Colaboradores</span></p>
-          <h2 class="sec-title" data-i18n="collab.title" data-reveal="lines">Nos <em>respaldan.</em></h2>
+          <h2 class="sec-title" data-i18n="collab.title" data-reveal="chars">Nos <em>respaldan.</em></h2>
         </div>
         <p class="sec-sub" data-i18n="collab.sub" data-reveal="lines">Entidades y empresas que hacen posible que haya debate universitario en Asturias.</p>
       </header>
