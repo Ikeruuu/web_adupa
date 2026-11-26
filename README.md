@@ -30,15 +30,29 @@ Abre `http://localhost:5173`. Para generar la versión de producción: `npm run 
 | Escena 3D y planos de cámara | `src/scene.js` |
 
 > Lo que hay ahora en calendario, publicaciones, colaboradores y enlaces es **contenido de ejemplo**.
-> El búho del sello es **provisional** hasta tener el logo definitivo en vectorial (SVG).
-
 ## Publicar en adupa.es
 
-La web es estática: no necesita servidor ni base de datos. Recomendado: **Cloudflare Pages** (gratis).
+La web es estática: no necesita servidor ni base de datos. Se publica gratis en **GitHub Pages**:
+`.github/workflows/deploy.yml` la compila y la sube en cada `git push` a `main`.
 
-1. En Cloudflare → *Workers & Pages* → *Create* → *Pages* → conectar este repositorio de GitHub.
-2. Build command: `npm run build` · Output directory: `dist`.
-3. En *Custom domains* añade `adupa.es` y `www.adupa.es`.
-4. En DonDominio, cambia los servidores DNS del dominio por los dos que te indique Cloudflare.
+Puesta en marcha (una sola vez):
 
-A partir de ahí, cada `git push` a `main` publica la web sola.
+1. En GitHub → *Settings* → *Pages* → *Build and deployment* → *Source*: **GitHub Actions**.
+2. En la pestaña *Actions*, abre «Publicar en GitHub Pages» y pulsa *Run workflow* (o haz cualquier push).
+3. En *Settings* → *Pages* → *Custom domain* escribe `adupa.es` y guarda.
+4. En DonDominio → zona DNS de `adupa.es`, borra los registros A/CNAME de aparcamiento que haya y crea:
+
+   | Tipo | Nombre | Valor |
+   |---|---|---|
+   | A | `adupa.es` (o `@`) | `185.199.108.153` |
+   | A | `adupa.es` (o `@`) | `185.199.109.153` |
+   | A | `adupa.es` (o `@`) | `185.199.110.153` |
+   | A | `adupa.es` (o `@`) | `185.199.111.153` |
+   | CNAME | `www` | `ikeruuu.github.io` |
+
+5. Cuando GitHub dé el dominio por verificado (de minutos a unas horas), marca **Enforce HTTPS** en *Settings* → *Pages*.
+
+### Que salga en Google
+
+- `public/robots.txt` y `public/sitemap.xml` ya están en la web.
+- Da de alta `adupa.es` en [Google Search Console](https://search.google.com/search-console) (propiedad de tipo *Dominio*; pide añadir un registro TXT en DonDominio) y envía `https://adupa.es/sitemap.xml`.
