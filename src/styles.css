@@ -39,7 +39,9 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-color: var(--g-300) var(--stage); }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-color: var(--g-300) var(--stage); overflow-x: hidden; overflow-x: clip; }
+/* las animaciones que entran desde los lados no deben ensanchar la página (en móvil permitía moverla de lado) */
+main > section, .foot { overflow-x: clip; }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-stopped { overflow: clip; }
