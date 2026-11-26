@@ -199,13 +199,13 @@ const BASE = { a: 1, la: 1, b: 0, lb: 0, arcs: 0, waves: 0, room: 0, time: 0, ha
 const SHOTS = [
   { // 0 · inicio: primer orador
     l: { cam: [1.6, 1.58, -5.15], tgt: [-1.25, 0.96, 0], ox: 0.23, oy: 0.02 },
-    p: { cam: [2.5, 1.9, -6.9], tgt: [-1.2, 0.95, 0], ox: 0.06, oy: 0.22 },
+    p: { cam: [2.5, 1.9, -6.9], tgt: [-1.2, 0.95, 0], ox: 0.08, oy: 0.4 },
     s: { waves: 1, tagA: 1 },
   },
   { // inicio → sale
     el: '#quienes', from: 1, to: 0,
     l: { cam: [2.9, 2.05, -4.7], tgt: [-1.2, 1.0, 0], ox: 0.23, oy: 0.0 },
-    p: { cam: [3.4, 2.4, -6.6], tgt: [-1.2, 1.0, 0], ox: 0.06, oy: 0.18 },
+    p: { cam: [3.4, 2.4, -6.6], tgt: [-1.2, 1.0, 0], ox: 0.08, oy: 0.3 },
     s: { waves: 0.4, tagA: 0 },
   },
   { // acto I · dos posturas
@@ -223,13 +223,13 @@ const SHOTS = [
   { // acto II · siete minutos (vista cenital, el suelo es un cronómetro)
     el: '#act-2', from: 1, to: 0,
     l: { cam: [0, 14.2, -5.4], tgt: [0, 0, 0], ox: 0.21, oy: 0 },
-    p: { cam: [0, 29, -1.4], tgt: [0, 0, 0], ox: 0, oy: 0.14 },
+    p: { cam: [0, 33, -9], tgt: [0, 0, 0], ox: 0, oy: 0.16 },
     s: { b: 1, lb: 1, arcs: 0.25, hand: 1, time: 0.12 },
   },
   {
     el: '#act-2', from: 0, to: -0.9,
     l: { cam: [1.6, 13.4, -6.6], tgt: [0, 0, 0], ox: 0.21, oy: 0 },
-    p: { cam: [0, 28, -3], tgt: [0, 0, 0], ox: 0, oy: 0.14 },
+    p: { cam: [3, 31, -12], tgt: [0, 0, 0], ox: 0, oy: 0.16 },
     s: { b: 1, lb: 1, arcs: 0.25, hand: 1, time: 1 },
   },
   { // acto III · la sala
@@ -247,13 +247,13 @@ const SHOTS = [
   { // únete · el atril libre
     el: '#unete', from: 1.9, to: 0.8,
     l: { cam: [4.5, 2.15, -2.9], tgt: [0.75, 1.02, 0.25], ox: 0.2, oy: 0.02 },
-    p: { cam: [6.4, 2.7, -4.3], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.2 },
+    p: { cam: [6.4, 2.7, -4.3], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.36 },
     s: { b: 0, lb: 1, arcs: 0, hand: 0, time: 1, room: 1, free: 1 },
   },
   {
     el: '#unete', from: 0.8, to: -0.4,
     l: { cam: [3.6, 1.85, -2.2], tgt: [0.8, 1.05, 0.25], ox: 0.2, oy: 0.02 },
-    p: { cam: [5.5, 2.4, -3.6], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.2 },
+    p: { cam: [5.5, 2.4, -3.6], tgt: [0.85, 0.95, 0.25], ox: 0, oy: 0.3 },
     s: { b: 0, lb: 1, arcs: 0, hand: 0, time: 1, room: 1, free: 1 },
   },
 ];
@@ -306,7 +306,7 @@ export function createScene(canvas, { reduced = false } = {}) {
   hand.add(needle);
   const ARC_N = 240;
   const timeArc = polyline(Array.from({ length: ARC_N + 1 }, (_, i) => {
-    const t = (i / ARC_N) * Math.PI * 2; return new THREE.Vector3(Math.sin(t) * (R + 0.14), 0.012, Math.cos(t) * (R + 0.14));
+    const t = (i / ARC_N) * Math.PI * 2; return new THREE.Vector3(-Math.sin(t) * (R + 0.14), 0.012, Math.cos(t) * (R + 0.14)); // sentido horario visto desde arriba
   }), M.goldBold);
   scene.add(timeArc);
 
@@ -497,7 +497,6 @@ export function createScene(canvas, { reduced = false } = {}) {
     hand.scale.setScalar(Math.max(0.001, easeIO(cur.hand)));
     timeArc.visible = cur.hand > 0.02 && cur.time > 0.002;
     timeArc.geometry.instanceCount = Math.ceil(clamp01(cur.time) * ARC_N);
-    timeArc.scale.x = -1; // sentido horario visto desde arriba
 
     // gesto
     if (!reduced) {

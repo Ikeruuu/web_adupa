@@ -139,7 +139,7 @@ export const dict = {
     'hud.label': 'Speech',
 
     'hero.kicker': 'University Debating Association<br>of the Principality of Asturias',
-    'hero.title': '<span class="line">We take</span><span class="line"><em>the floor.</em></span>',
+    'hero.title': '<span class="line">We take</span><span class="line"><em>the floor<span class="dot">.</span></em></span>',
     'hero.lead': 'At ADUPA we train what no syllabus covers: thinking fast, speaking clearly and listening to whoever thinks the exact opposite.',
     'hero.cta1': 'Join the group',
     'hero.cta2': 'See the calendar',

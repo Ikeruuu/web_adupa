@@ -7,7 +7,6 @@ import './styles.css';
 
 import { applyLang, detectLang, lang } from './i18n.js';
 import { renderAll, bindCalendar, bindGallery, bindDocs, bindDialogs } from './render.js';
-import { createScene } from './scene.js';
 import { initMotion, initReveals, killReveals, wrapHeroLines, curtainSwap, refresh, debug } from './motion.js';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -20,11 +19,19 @@ bindGallery();
 bindDocs();
 bindDialogs();
 
-// 2 · escenario 3D
-const stage = createScene(document.querySelector('#stage'), { reduced });
-
-// 3 · movimiento
-initMotion(stage);
+// 2 · escenario 3D (se carga aparte para no frenar el primer pintado) y 3 · movimiento
+(async () => {
+  let stage = null;
+  try {
+    const { createScene } = await import('./scene.js');
+    stage = createScene(document.querySelector('#stage'), { reduced });
+  } catch (err) {
+    console.warn('Escena 3D no disponible:', err);
+    document.querySelector('#stage').style.display = 'none';
+  }
+  window.__adupa = { stage, ...debug }; // gancho de depuración
+  initMotion(stage);
+})();
 
 // 4 · botón ES / EN
 document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
@@ -40,6 +47,5 @@ document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
   });
 });
 
-// 5 · fin de carga (reactiva las transiciones CSS) y gancho de depuración
+// 5 · fin de carga: reactiva las transiciones CSS
 window.addEventListener('load', () => setTimeout(() => document.documentElement.classList.remove('is-loading'), 80));
-window.__adupa = { stage, ...debug };

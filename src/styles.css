@@ -260,6 +260,7 @@ html:not(.js) .intro { display: none; }
 .hero__title .line { display: block; overflow: hidden; padding-block: .06em .12em; margin-block: -.06em -.12em; }
 .hero__title .line + .line { padding-left: .52em; }
 .hero__title .line__in { display: block; will-change: transform; }
+.hero__title .dot { margin-left: .09em; }
 .hero__scroll {
   position: absolute; right: var(--pad); bottom: 1.3rem; display: flex; align-items: center; gap: .6rem;
   padding: .4rem 0;
@@ -471,6 +472,7 @@ html:not(.js) .intro { display: none; }
 .join__text { font-size: 1.15em; max-width: 29rem; line-height: 1.45; }
 .join__cta { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: .6rem; }
 .join__note { opacity: .65; }
+.join .btn--ghost { --bg: color-mix(in srgb, var(--g-900) 84%, transparent); }
 
 /* ==========================================================================
    DOCUMENTOS
@@ -605,6 +607,7 @@ a.partner:hover img { filter: none; opacity: 1; }
   /* En móvil el 3D va siempre por detrás del texto */
   #stage { z-index: 0; }
   .tag { z-index: 0; }
+  #tag-a, #tag-free { display: none; }
   .nav__join { display: none; }
   .nav .lang { display: none; }
   .brand__seal { width: 2.5rem; height: 2.5rem; }
