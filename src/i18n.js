@@ -260,7 +260,9 @@ export function detectLang() {
     const s = localStorage.getItem(KEY);
     if (s === 'es' || s === 'en') return s;
   } catch { /* almacenamiento bloqueado */ }
-  return (navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en';
+  // por defecto, siempre español: el inglés solo si se elige con el botón (o ?lang=en).
+  // No se mira el idioma del navegador: Google renderiza con uno en inglés y la indexaba así.
+  return 'es';
 }
 
 export const lang = () => current;
